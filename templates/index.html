@@ -266,7 +266,7 @@
 
     <div class="caja">
 
-        <h2>Intercambios pendientes</h2>
+        <h2>Intercambios posibles</h2>
 
         {% if intercambios %}
 
@@ -280,19 +280,23 @@
                             {{ intercambio.usuario1.title() }}
                         </b>
 
-                        entrega
+                        puede darle
 
                         <b>
                             {{ intercambio.da1.title() }}
                         </b>
 
-                        ↔
+                        a
 
                         <b>
                             {{ intercambio.usuario2.title() }}
                         </b>
 
-                        entrega
+                    </p>
+
+                    <p>
+
+                        Y recibir:
 
                         <b>
                             {{ intercambio.da2.title() }}
@@ -300,35 +304,9 @@
 
                     </p>
 
-                    <p>
-
-                        {{ intercambio.usuario1.title() }}:
-
-                        {% if intercambio.acepto1 == 1 %}
-                            ✅
-                        {% else %}
-                            ❌
-                        {% endif %}
-
-                        <br><br>
-
-                        {{ intercambio.usuario2.title() }}:
-
-                        {% if intercambio.acepto2 == 1 %}
-                            ✅
-                        {% else %}
-                            ❌
-                        {% endif %}
-
-                    </p>
-
-                    <a href="/aceptar/{{ intercambio.id }}">
-
-                        <button>
-                            Aceptar intercambio
-                        </button>
-
-                    </a>
+                    <button disabled>
+                        Intercambio disponible
+                    </button>
 
                 </div>
 
