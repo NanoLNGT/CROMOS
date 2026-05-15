@@ -297,7 +297,110 @@ def restar(id_item):
     conexion.commit()
 
     return redirect("/")
+# -------------------------
+# REALIZAR INTERCAMBIO
+# -------------------------
 
+@app.route("/intercambiar")
+def intercambiar():
+
+    if "usuario" not in session:
+        return redirect("/login")
+
+    usuario1 = request.args.get("u1")
+    usuario2 = request.args.get("u2")
+
+    da1 = request.args.get("d1")
+    da2 = request.args.get("d2")
+
+    # INVENTARIOS ACTUALES
+    faltantes1, repetidas1 = obtener_inventario(usuario1)
+    faltantes2, repetidas2 = obtener_inventario(usuario2)
+
+    # VALIDAR
+    valido = (
+
+        da1 in repetidas1
+        and da1 in faltantes2
+
+        and
+
+        da2 in repetidas2
+        and da2 in faltantes1
+
+    )
+
+    if not valido:
+
+        return redirect("/")
+
+    # ELIMINAR REPETIDA USUARIO 1
+    cursor.execute(
+        """
+        DELETE FROM inventario
+
+        WHERE
+            usuario = %s
+            AND figurita = %s
+            AND tipo = 'repetida'
+        """,
+        (
+            usuario1,
+            da1
+        )
+    )
+
+    # ELIMINAR FALTANTE USUARIO 1
+    cursor.execute(
+        """
+        DELETE FROM inventario
+
+        WHERE
+            usuario = %s
+            AND figurita = %s
+            AND tipo = 'faltante'
+        """,
+        (
+            usuario1,
+            da2
+        )
+    )
+
+    # ELIMINAR REPETIDA USUARIO 2
+    cursor.execute(
+        """
+        DELETE FROM inventario
+
+        WHERE
+            usuario = %s
+            AND figurita = %s
+            AND tipo = 'repetida'
+        """,
+        (
+            usuario2,
+            da2
+        )
+    )
+
+    # ELIMINAR FALTANTE USUARIO 2
+    cursor.execute(
+        """
+        DELETE FROM inventario
+
+        WHERE
+            usuario = %s
+            AND figurita = %s
+            AND tipo = 'faltante'
+        """,
+        (
+            usuario2,
+            da1
+        )
+    )
+
+    conexion.commit()
+
+    return redirect("/")
 # -------------------------
 # HOME
 # -------------------------
