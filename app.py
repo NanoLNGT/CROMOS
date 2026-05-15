@@ -599,24 +599,27 @@ def inicio():
 
     usuario_actual = session["usuario"]
 
-    usuarios = {}
+  # LIMPIAR INTERCAMBIOS INVALIDOS
+limpiar_intercambios()
 
-    cursor.execute("""
-    SELECT nombre
-    FROM usuarios
-    """)
+# RECARGAR USUARIOS
+usuarios = {}
 
-    lista_usuarios = cursor.fetchall()
+cursor.execute("""
+SELECT nombre
+FROM usuarios
+""")
 
-    for usuario in lista_usuarios:
+lista_usuarios = cursor.fetchall()
 
-        nombre = usuario[0]
+for usuario in lista_usuarios:
 
-        usuarios[nombre] = obtener_inventario(nombre)
+    nombre = usuario[0]
 
-    crear_intercambios(usuarios)
+    usuarios[nombre] = obtener_inventario(nombre)
 
-    limpiar_intercambios()
+# CREAR NUEVOS INTERCAMBIOS
+crear_intercambios(usuarios)
 
     cursor.execute("""
     SELECT *
