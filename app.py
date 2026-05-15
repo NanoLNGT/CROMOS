@@ -54,29 +54,6 @@ CREATE TABLE IF NOT EXISTS inventario (
 )
 """)
 
-# -------------------------
-# TABLA INTERCAMBIOS
-# -------------------------
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS intercambios (
-
-    id SERIAL PRIMARY KEY,
-
-    usuario1 TEXT,
-    usuario2 TEXT,
-
-    da1 TEXT,
-    da2 TEXT,
-
-    acepto1 INTEGER,
-    acepto2 INTEGER,
-
-    realizado INTEGER
-
-)
-""")
-
 conexion.commit()
 
 # -------------------------
@@ -93,7 +70,8 @@ def login():
 
         cursor.execute(
             """
-            SELECT * FROM usuarios
+            SELECT *
+            FROM usuarios
             WHERE nombre = %s
             """,
             (nombre,)
@@ -101,6 +79,7 @@ def login():
 
         usuario = cursor.fetchone()
 
+        # CREAR USUARIO
         if usuario is None:
 
             cursor.execute(
@@ -208,6 +187,7 @@ def agregar():
 
     existe = cursor.fetchone()
 
+    # YA EXISTE
     if existe:
 
         id_item = existe[0]
@@ -225,6 +205,7 @@ def agregar():
             )
         )
 
+    # NUEVA FIGURITA
     else:
 
         cursor.execute(
@@ -287,6 +268,7 @@ def restar(id_item):
 
         cantidad = item[0]
 
+        # BAJAR CANTIDAD
         if cantidad > 1:
 
             cursor.execute(
@@ -298,6 +280,7 @@ def restar(id_item):
                 (id_item,)
             )
 
+        # ELIMINAR
         else:
 
             cursor.execute(
@@ -313,10 +296,37 @@ def restar(id_item):
     return redirect("/")
 
 # -------------------------
-# CREAR INTERCAMBIOS
+# HOME
 # -------------------------
 
-def crear_intercambios(usuarios):
+@app.route("/")
+def inicio():
+
+    if "usuario" not in session:
+        return redirect("/login")
+
+    usuario_actual = session["usuario"]
+
+    usuarios = {}
+
+    cursor.execute("""
+    SELECT nombre
+    FROM usuarios
+    """)
+
+    lista_usuarios = cursor.fetchall()
+
+    for usuario in lista_usuarios:
+
+        nombre = usuario[0]
+
+        usuarios[nombre] = obtener_inventario(nombre)
+
+    # -------------------------
+    # INTERCAMBIOS DINAMICOS
+    # -------------------------
+
+    intercambios = []
 
     nombres = list(usuarios.keys())
 
@@ -338,311 +348,17 @@ def crear_intercambios(usuarios):
 
                         if fig2 in faltantes1:
 
-                            cursor.execute(
-                                """
-                                SELECT *
-                                FROM intercambios
+                            intercambios.append({
 
-                                WHERE
-                                    usuario1 = %s
-                                    AND usuario2 = %s
-                                    AND da1 = %s
-                                    AND da2 = %s
-                                    AND realizado = 0
-                                """,
-                                (
-                                    usuario1,
-                                    usuario2,
-                                    fig1,
-                                    fig2
-                                )
-                            )
+                                "usuario1": usuario1,
+                                "usuario2": usuario2,
 
-                            existe = cursor.fetchone()
+                                "da1": fig1,
+                                "da2": fig2
 
-                            if existe is None:
+                            })
 
-                                cursor.execute(
-                                    """
-                                    INSERT INTO intercambios
-
-                                    (
-                                        usuario1,
-                                        usuario2,
-                                        da1,
-                                        da2,
-                                        acepto1,
-                                        acepto2,
-                                        realizado
-                                    )
-
-                                    VALUES (%s, %s, %s, %s, 0, 0, 0)
-                                    """,
-                                    (
-                                        usuario1,
-                                        usuario2,
-                                        fig1,
-                                        fig2
-                                    )
-                                )
-
-    conexion.commit()
-
-# -------------------------
-# LIMPIAR INTERCAMBIOS
-# -------------------------
-
-def limpiar_intercambios():
-
-    cursor.execute("""
-    SELECT *
-    FROM intercambios
-    WHERE realizado = 0
-    """)
-
-    trades = cursor.fetchall()
-
-    for trade in trades:
-
-        id_trade = trade[0]
-
-        usuario1 = trade[1]
-        usuario2 = trade[2]
-
-        da1 = trade[3]
-        da2 = trade[4]
-
-        faltantes1, repetidas1 = obtener_inventario(usuario1)
-        faltantes2, repetidas2 = obtener_inventario(usuario2)
-
-        valido = (
-
-            da1 in repetidas1
-            and da1 in faltantes2
-
-            and
-
-            da2 in repetidas2
-            and da2 in faltantes1
-
-        )
-
-        if not valido:
-
-            cursor.execute(
-                """
-                DELETE FROM intercambios
-                WHERE id = %s
-                """,
-                (id_trade,)
-            )
-
-    conexion.commit()
-
-# -------------------------
-# ACEPTAR INTERCAMBIO
-# -------------------------
-
-@app.route("/aceptar/<int:id_intercambio>")
-def aceptar(id_intercambio):
-
-    if "usuario" not in session:
-        return redirect("/login")
-
-    usuario_actual = session["usuario"]
-
-    cursor.execute(
-        """
-        SELECT *
-        FROM intercambios
-        WHERE id = %s
-        """,
-        (id_intercambio,)
-    )
-
-    intercambio = cursor.fetchone()
-
-    if intercambio is None:
-        return redirect("/")
-
-    usuario1 = intercambio[1]
-    usuario2 = intercambio[2]
-
-    da1 = intercambio[3]
-    da2 = intercambio[4]
-
-    if usuario_actual == usuario1:
-
-        cursor.execute(
-            """
-            UPDATE intercambios
-            SET acepto1 = 1
-            WHERE id = %s
-            """,
-            (id_intercambio,)
-        )
-
-    if usuario_actual == usuario2:
-
-        cursor.execute(
-            """
-            UPDATE intercambios
-            SET acepto2 = 1
-            WHERE id = %s
-            """,
-            (id_intercambio,)
-        )
-
-    conexion.commit()
-
-    cursor.execute(
-        """
-        SELECT *
-        FROM intercambios
-        WHERE id = %s
-        """,
-        (id_intercambio,)
-    )
-
-    intercambio = cursor.fetchone()
-
-    if intercambio[5] == 1 and intercambio[6] == 1:
-
-        # USUARIO 1 REPETIDA
-        cursor.execute(
-            """
-            DELETE FROM inventario
-
-            WHERE
-                usuario = %s
-                AND figurita = %s
-                AND tipo = 'repetida'
-            """,
-            (
-                usuario1,
-                da1
-            )
-        )
-
-        # USUARIO 1 FALTANTE
-        cursor.execute(
-            """
-            DELETE FROM inventario
-
-            WHERE
-                usuario = %s
-                AND figurita = %s
-                AND tipo = 'faltante'
-            """,
-            (
-                usuario1,
-                da2
-            )
-        )
-
-        # USUARIO 2 REPETIDA
-        cursor.execute(
-            """
-            DELETE FROM inventario
-
-            WHERE
-                usuario = %s
-                AND figurita = %s
-                AND tipo = 'repetida'
-            """,
-            (
-                usuario2,
-                da2
-            )
-        )
-
-        # USUARIO 2 FALTANTE
-        cursor.execute(
-            """
-            DELETE FROM inventario
-
-            WHERE
-                usuario = %s
-                AND figurita = %s
-                AND tipo = 'faltante'
-            """,
-            (
-                usuario2,
-                da1
-            )
-        )
-
-        cursor.execute(
-            """
-            UPDATE intercambios
-            SET realizado = 1
-            WHERE id = %s
-            """,
-            (id_intercambio,)
-        )
-
-        conexion.commit()
-
-        limpiar_intercambios()
-
-    return redirect("/")
-
-# -------------------------
-# HOME
-# -------------------------
-
-@app.route("/")
-def inicio():
-
-    if "usuario" not in session:
-        return redirect("/login")
-
-    usuario_actual = session["usuario"]
-
-  # LIMPIAR INTERCAMBIOS INVALIDOS
-limpiar_intercambios()
-
-# RECARGAR USUARIOS
-usuarios = {}
-
-cursor.execute("""
-SELECT nombre
-FROM usuarios
-""")
-
-lista_usuarios = cursor.fetchall()
-
-for usuario in lista_usuarios:
-
-    nombre = usuario[0]
-
-    usuarios[nombre] = obtener_inventario(nombre)
-
-# CREAR NUEVOS INTERCAMBIOS
-crear_intercambios(usuarios)
-
-    cursor.execute("""
-    SELECT *
-    FROM intercambios
-    WHERE realizado = 0
-    """)
-
-    datos_intercambios = cursor.fetchall()
-
-    intercambios = []
-
-    for inter in datos_intercambios:
-
-        intercambios.append({
-            "id": inter[0],
-            "usuario1": inter[1],
-            "usuario2": inter[2],
-            "da1": inter[3],
-            "da2": inter[4],
-            "acepto1": inter[5],
-            "acepto2": inter[6]
-        })
-
+    # INVENTARIO ACTUAL
     cursor.execute(
         """
         SELECT *
