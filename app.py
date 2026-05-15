@@ -17,7 +17,7 @@ app.secret_key = "super_secret_key"
 # -------------------------
 
 conexion = psycopg2.connect(
-    "postgresql://postgres.cedwdsoaiuzgrwmvdsus:dYbWuwdgQIeCDhv8@aws-1-us-east-2.pooler.supabase.com:6543/postgres",
+    "postgresql://postgres.cedwdsoaiuzgrwmvdsus:dYbWuwdgQIeCDhv8xxx@aws-1-us-east-2.pooler.supabase.com:6543/postgres",
     sslmode="require"
 )
 
@@ -683,15 +683,14 @@ def inicio():
     )
 
     inventario = cursor.fetchall()
-
-cursor.execute("""
-SELECT *
-FROM propuestas
-""")
-
-propuestas = cursor.fetchall()
-
-return render_template(
+    cursor.execute("""
+                   SELECT *
+                   FROM propuestas
+                   """)
+    
+    propuestas = cursor.fetchall()
+    
+    return render_template(
         "index.html",
         usuario_actual=usuario_actual,
         inventario=inventario,
