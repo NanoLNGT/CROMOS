@@ -650,6 +650,17 @@ def inicio():
 
             usuario1 = nombres[i]
             usuario2 = nombres[j]
+            # SOLO MOSTRAR MIS INTERCAMBIOS
+            if (
+                usuario_actual != usuario1
+                
+                and
+                
+                usuario_actual != usuario2
+                
+                ):
+                
+                continue
 
             faltantes1, repetidas1 = usuarios[usuario1]
             faltantes2, repetidas2 = usuarios[usuario2]
