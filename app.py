@@ -59,6 +59,26 @@ CREATE TABLE IF NOT EXISTS inventario (
 conexion.commit()
 
 # -------------------------
+# TABLA PROPUESTAS
+# -------------------------
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS propuestas (
+
+    id SERIAL PRIMARY KEY,
+
+    usuario1 TEXT,
+    usuario2 TEXT,
+
+    da1 TEXT,
+    da2 TEXT
+
+)
+""")
+
+conexion.commit()
+
+# -------------------------
 # LOGIN
 # -------------------------
 
@@ -109,6 +129,8 @@ def login():
         session["usuario"] = nombre
 
         return redirect("/")
+
+
 
     return render_template("login.html")
 
@@ -402,6 +424,192 @@ def intercambiar():
 
     return redirect("/")
 # -------------------------
+# PROPONER INTERCAMBIO
+# -------------------------
+
+@app.route("/proponer")
+def proponer():
+
+    if "usuario" not in session:
+        return redirect("/login")
+
+    usuario1 = request.args.get("u1")
+    usuario2 = request.args.get("u2")
+
+    da1 = request.args.get("d1")
+    da2 = request.args.get("d2")
+
+    # EVITAR DUPLICADOS
+    cursor.execute(
+        """
+        SELECT *
+        FROM propuestas
+
+        WHERE
+            usuario1 = %s
+            AND usuario2 = %s
+            AND da1 = %s
+            AND da2 = %s
+        """,
+        (
+            usuario1,
+            usuario2,
+            da1,
+            da2
+        )
+    )
+
+    existe = cursor.fetchone()
+
+    if existe is None:
+
+        cursor.execute(
+            """
+            INSERT INTO propuestas
+            (
+                usuario1,
+                usuario2,
+                da1,
+                da2
+            )
+
+            VALUES (%s, %s, %s, %s)
+            """,
+            (
+                usuario1,
+                usuario2,
+                da1,
+                da2
+            )
+        )
+
+        conexion.commit()
+
+    return redirect("/")
+
+# -------------------------
+# ACEPTAR INTERCAMBIO
+# -------------------------
+
+@app.route("/aceptar/<int:id_propuesta>")
+def aceptar(id_propuesta):
+
+    if "usuario" not in session:
+        return redirect("/login")
+
+    cursor.execute(
+        """
+        SELECT *
+        FROM propuestas
+        WHERE id = %s
+        """,
+        (id_propuesta,)
+    )
+
+    propuesta = cursor.fetchone()
+
+    if propuesta is None:
+        return redirect("/")
+
+    usuario1 = propuesta[1]
+    usuario2 = propuesta[2]
+
+    da1 = propuesta[3]
+    da2 = propuesta[4]
+
+    # INVENTARIOS ACTUALES
+    faltantes1, repetidas1 = obtener_inventario(usuario1)
+    faltantes2, repetidas2 = obtener_inventario(usuario2)
+
+    valido = (
+
+        da1 in repetidas1
+        and da1 in faltantes2
+
+        and
+
+        da2 in repetidas2
+        and da2 in faltantes1
+
+    )
+
+    if not valido:
+
+        cursor.execute(
+            """
+            DELETE FROM propuestas
+            WHERE id = %s
+            """,
+            (id_propuesta,)
+        )
+
+        conexion.commit()
+
+        return redirect("/")
+
+    # ELIMINAR REPETIDAS/FALTANTES
+
+    cursor.execute(
+        """
+        DELETE FROM inventario
+
+        WHERE
+            usuario = %s
+            AND figurita = %s
+            AND tipo = 'repetida'
+        """,
+        (usuario1, da1)
+    )
+
+    cursor.execute(
+        """
+        DELETE FROM inventario
+
+        WHERE
+            usuario = %s
+            AND figurita = %s
+            AND tipo = 'faltante'
+        """,
+        (usuario1, da2)
+    )
+
+    cursor.execute(
+        """
+        DELETE FROM inventario
+
+        WHERE
+            usuario = %s
+            AND figurita = %s
+            AND tipo = 'repetida'
+        """,
+        (usuario2, da2)
+    )
+
+    cursor.execute(
+        """
+        DELETE FROM inventario
+
+        WHERE
+            usuario = %s
+            AND figurita = %s
+            AND tipo = 'faltante'
+        """,
+        (usuario2, da1)
+    )
+
+    # BORRAR PROPUESTA
+    cursor.execute(
+        """
+        DELETE FROM propuestas
+        WHERE id = %s
+        """,
+        (id_propuesta,)
+    )
+
+    conexion.commit()
+
+    return redirect("/")
+# -------------------------
 # HOME
 # -------------------------
 
@@ -476,10 +684,18 @@ def inicio():
 
     inventario = cursor.fetchall()
 
-    return render_template(
+cursor.execute("""
+SELECT *
+FROM propuestas
+""")
+
+propuestas = cursor.fetchall()
+
+return render_template(
         "index.html",
         usuario_actual=usuario_actual,
         inventario=inventario,
+        propuestas=propuestas,
         intercambios=intercambios
     )
 

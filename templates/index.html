@@ -304,16 +304,12 @@
 
                     </p>
 
-                <a href="
-                    /intercambiar
-                    ?u1={{ intercambio.usuario1 }}
-                    &u2={{ intercambio.usuario2 }}
-                    &d1={{ intercambio.da1 }}
-                    &d2={{ intercambio.da2 }}
-                    ">
+                <<a href="/proponer?u1={{ intercambio.usuario1 }}&u2={{ intercambio.usuario2 }}&d1={{ intercambio.da1 }}&d2={{ intercambio.da2 }}">
+                    
                     <button>
-                        Realizar intercambio
+                        Proponer intercambio
                     </button>
+                
                 </a>
 
                 </div>
@@ -329,6 +325,51 @@
         {% endif %}
 
     </div>
+<div class="caja">
+
+    <h2>Propuestas pendientes</h2>
+
+    {% for propuesta in propuestas %}
+
+        <div class="trade">
+
+            <p>
+
+                <b>
+                    {{ propuesta[1].title() }}
+                </b>
+
+                propone intercambiar:
+
+                <b>
+                    {{ propuesta[3].title() }}
+                </b>
+
+                por
+
+                <b>
+                    {{ propuesta[4].title() }}
+                </b>
+
+            </p>
+
+            {% if usuario_actual == propuesta[2] %}
+
+                <a href="/aceptar/{{ propuesta[0] }}">
+
+                    <button>
+                        Aceptar intercambio
+                    </button>
+
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    {% endfor %}
+
+</div>
 
 </body>
 
