@@ -17,7 +17,7 @@ app.secret_key = "super_secret_key"
 # -------------------------
 
 conexion = psycopg2.connect(
-    "TU_CONNECTION_STRING"
+    "postgresql://postgres.cedwdsoaiuzgrwmvdsus:Thiago20020403_@aws-1-us-east-2.pooler.supabase.com:6543/postgres"
 )
 
 cursor = conexion.cursor()
@@ -96,6 +96,7 @@ def login():
 
         else:
 
+            # PASSWORD INCORRECTA
             if usuario[2] != password:
 
                 return """
