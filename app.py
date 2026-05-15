@@ -17,7 +17,7 @@ app.secret_key = "super_secret_key"
 # -------------------------
 
 conexion = psycopg2.connect(
-    "postgresql://postgres:Thiago20020403_@db.cedwdsoaiuzgrwmvdsus.supabase.co:5432/postgres"
+    "postgresql://postgres:Thiago20020403_@db.cedwdsoaiuzgrwmvdsus.supabase.co:5432/postgres",
     sslmode="require"
 )
 
