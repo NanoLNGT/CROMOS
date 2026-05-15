@@ -13,11 +13,11 @@ app = Flask(__name__)
 app.secret_key = "super_secret_key"
 
 # -------------------------
-# SQLITE
+# POSTGRESQL
 # -------------------------
 
 conexion = psycopg2.connect(
-    "postgresql://postgres:Thiago20020403_@db.cedwdsoaiuzgrwmvdsus.supabase.co:5432/postgres"
+    "TU_CONNECTION_STRING"
 )
 
 cursor = conexion.cursor()
@@ -29,7 +29,7 @@ cursor = conexion.cursor()
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS usuarios (
 
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     nombre TEXT UNIQUE,
     password TEXT
 
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS inventario (
 
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
 
     usuario TEXT,
     figurita TEXT,
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS inventario (
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS intercambios (
 
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
 
     usuario1 TEXT,
     usuario2 TEXT,
@@ -94,14 +94,13 @@ def login():
         cursor.execute(
             """
             SELECT * FROM usuarios
-            WHERE nombre = ?
+            WHERE nombre = %s
             """,
             (nombre,)
         )
 
         usuario = cursor.fetchone()
 
-        # CREAR USUARIO
         if usuario is None:
 
             cursor.execute(
@@ -109,7 +108,7 @@ def login():
                 INSERT INTO usuarios
                 (nombre, password)
 
-                VALUES (?, ?)
+                VALUES (%s, %s)
                 """,
                 (nombre, password)
             )
@@ -118,7 +117,6 @@ def login():
 
         else:
 
-            # PASSWORD INCORRECTA
             if usuario[2] != password:
 
                 return """
@@ -153,7 +151,7 @@ def obtener_inventario(usuario):
         """
         SELECT figurita, tipo, cantidad
         FROM inventario
-        WHERE usuario = ?
+        WHERE usuario = %s
         """,
         (usuario,)
     )
@@ -197,9 +195,9 @@ def agregar():
         FROM inventario
 
         WHERE
-            usuario = ?
-            AND figurita = ?
-            AND tipo = ?
+            usuario = %s
+            AND figurita = %s
+            AND tipo = %s
         """,
         (
             usuario,
@@ -210,7 +208,6 @@ def agregar():
 
     existe = cursor.fetchone()
 
-    # YA EXISTE
     if existe:
 
         id_item = existe[0]
@@ -219,8 +216,8 @@ def agregar():
         cursor.execute(
             """
             UPDATE inventario
-            SET cantidad = ?
-            WHERE id = ?
+            SET cantidad = %s
+            WHERE id = %s
             """,
             (
                 cantidad,
@@ -228,7 +225,6 @@ def agregar():
             )
         )
 
-    # NUEVA FIGURITA
     else:
 
         cursor.execute(
@@ -236,7 +232,7 @@ def agregar():
             INSERT INTO inventario
             (usuario, figurita, tipo, cantidad)
 
-            VALUES (?, ?, ?, 1)
+            VALUES (%s, %s, %s, 1)
             """,
             (
                 usuario,
@@ -250,7 +246,7 @@ def agregar():
     return redirect("/")
 
 # -------------------------
-# SUMAR CANTIDAD
+# SUMAR
 # -------------------------
 
 @app.route("/sumar/<int:id_item>")
@@ -260,7 +256,7 @@ def sumar(id_item):
         """
         UPDATE inventario
         SET cantidad = cantidad + 1
-        WHERE id = ?
+        WHERE id = %s
         """,
         (id_item,)
     )
@@ -270,7 +266,7 @@ def sumar(id_item):
     return redirect("/")
 
 # -------------------------
-# RESTAR CANTIDAD
+# RESTAR
 # -------------------------
 
 @app.route("/restar/<int:id_item>")
@@ -280,7 +276,7 @@ def restar(id_item):
         """
         SELECT cantidad
         FROM inventario
-        WHERE id = ?
+        WHERE id = %s
         """,
         (id_item,)
     )
@@ -291,25 +287,23 @@ def restar(id_item):
 
         cantidad = item[0]
 
-        # BAJAR CANTIDAD
         if cantidad > 1:
 
             cursor.execute(
                 """
                 UPDATE inventario
                 SET cantidad = cantidad - 1
-                WHERE id = ?
+                WHERE id = %s
                 """,
                 (id_item,)
             )
 
-        # ELIMINAR
         else:
 
             cursor.execute(
                 """
                 DELETE FROM inventario
-                WHERE id = ?
+                WHERE id = %s
                 """,
                 (id_item,)
             )
@@ -336,23 +330,24 @@ def crear_intercambios(usuarios):
             faltantes1, repetidas1 = usuarios[usuario1]
             faltantes2, repetidas2 = usuarios[usuario2]
 
-            for fig1 in repetidas1:
+            for fig1 in repetidas1.keys():
 
                 if fig1 in faltantes2:
 
-                    for fig2 in repetidas2:
+                    for fig2 in repetidas2.keys():
 
                         if fig2 in faltantes1:
 
                             cursor.execute(
                                 """
-                                SELECT * FROM intercambios
+                                SELECT *
+                                FROM intercambios
 
                                 WHERE
-                                    usuario1 = ?
-                                    AND usuario2 = ?
-                                    AND da1 = ?
-                                    AND da2 = ?
+                                    usuario1 = %s
+                                    AND usuario2 = %s
+                                    AND da1 = %s
+                                    AND da2 = %s
                                     AND realizado = 0
                                 """,
                                 (
@@ -381,7 +376,7 @@ def crear_intercambios(usuarios):
                                         realizado
                                     )
 
-                                    VALUES (?, ?, ?, ?, 0, 0, 0)
+                                    VALUES (%s, %s, %s, %s, 0, 0, 0)
                                     """,
                                     (
                                         usuario1,
@@ -390,6 +385,57 @@ def crear_intercambios(usuarios):
                                         fig2
                                     )
                                 )
+
+    conexion.commit()
+
+# -------------------------
+# LIMPIAR INTERCAMBIOS
+# -------------------------
+
+def limpiar_intercambios():
+
+    cursor.execute("""
+    SELECT *
+    FROM intercambios
+    WHERE realizado = 0
+    """)
+
+    trades = cursor.fetchall()
+
+    for trade in trades:
+
+        id_trade = trade[0]
+
+        usuario1 = trade[1]
+        usuario2 = trade[2]
+
+        da1 = trade[3]
+        da2 = trade[4]
+
+        faltantes1, repetidas1 = obtener_inventario(usuario1)
+        faltantes2, repetidas2 = obtener_inventario(usuario2)
+
+        valido = (
+
+            da1 in repetidas1
+            and da1 in faltantes2
+
+            and
+
+            da2 in repetidas2
+            and da2 in faltantes1
+
+        )
+
+        if not valido:
+
+            cursor.execute(
+                """
+                DELETE FROM intercambios
+                WHERE id = %s
+                """,
+                (id_trade,)
+            )
 
     conexion.commit()
 
@@ -407,8 +453,9 @@ def aceptar(id_intercambio):
 
     cursor.execute(
         """
-        SELECT * FROM intercambios
-        WHERE id = ?
+        SELECT *
+        FROM intercambios
+        WHERE id = %s
         """,
         (id_intercambio,)
     )
@@ -424,14 +471,13 @@ def aceptar(id_intercambio):
     da1 = intercambio[3]
     da2 = intercambio[4]
 
-    # ACEPTAR
     if usuario_actual == usuario1:
 
         cursor.execute(
             """
             UPDATE intercambios
             SET acepto1 = 1
-            WHERE id = ?
+            WHERE id = %s
             """,
             (id_intercambio,)
         )
@@ -442,39 +488,34 @@ def aceptar(id_intercambio):
             """
             UPDATE intercambios
             SET acepto2 = 1
-            WHERE id = ?
+            WHERE id = %s
             """,
             (id_intercambio,)
         )
 
     conexion.commit()
 
-    # RECARGAR
     cursor.execute(
         """
-        SELECT * FROM intercambios
-        WHERE id = ?
+        SELECT *
+        FROM intercambios
+        WHERE id = %s
         """,
         (id_intercambio,)
     )
 
     intercambio = cursor.fetchone()
 
-    # SI AMBOS ACEPTARON
     if intercambio[5] == 1 and intercambio[6] == 1:
 
-        # -------------------------
-        # REPETIDA USUARIO 1
-        # -------------------------
-
+        # USUARIO 1 REPETIDA
         cursor.execute(
             """
-            SELECT id, cantidad
-            FROM inventario
+            DELETE FROM inventario
 
             WHERE
-                usuario = ?
-                AND figurita = ?
+                usuario = %s
+                AND figurita = %s
                 AND tipo = 'repetida'
             """,
             (
@@ -483,45 +524,14 @@ def aceptar(id_intercambio):
             )
         )
 
-        item = cursor.fetchone()
-
-        if item:
-
-            id_item = item[0]
-            cantidad = item[1]
-
-            if cantidad > 1:
-
-                cursor.execute(
-                    """
-                    UPDATE inventario
-                    SET cantidad = cantidad - 1
-                    WHERE id = ?
-                    """,
-                    (id_item,)
-                )
-
-            else:
-
-                cursor.execute(
-                    """
-                    DELETE FROM inventario
-                    WHERE id = ?
-                    """,
-                    (id_item,)
-                )
-
-        # -------------------------
-        # FALTANTE USUARIO 1
-        # -------------------------
-
+        # USUARIO 1 FALTANTE
         cursor.execute(
             """
             DELETE FROM inventario
 
             WHERE
-                usuario = ?
-                AND figurita = ?
+                usuario = %s
+                AND figurita = %s
                 AND tipo = 'faltante'
             """,
             (
@@ -530,18 +540,14 @@ def aceptar(id_intercambio):
             )
         )
 
-        # -------------------------
-        # REPETIDA USUARIO 2
-        # -------------------------
-
+        # USUARIO 2 REPETIDA
         cursor.execute(
             """
-            SELECT id, cantidad
-            FROM inventario
+            DELETE FROM inventario
 
             WHERE
-                usuario = ?
-                AND figurita = ?
+                usuario = %s
+                AND figurita = %s
                 AND tipo = 'repetida'
             """,
             (
@@ -550,45 +556,14 @@ def aceptar(id_intercambio):
             )
         )
 
-        item = cursor.fetchone()
-
-        if item:
-
-            id_item = item[0]
-            cantidad = item[1]
-
-            if cantidad > 1:
-
-                cursor.execute(
-                    """
-                    UPDATE inventario
-                    SET cantidad = cantidad - 1
-                    WHERE id = ?
-                    """,
-                    (id_item,)
-                )
-
-            else:
-
-                cursor.execute(
-                    """
-                    DELETE FROM inventario
-                    WHERE id = ?
-                    """,
-                    (id_item,)
-                )
-
-        # -------------------------
-        # FALTANTE USUARIO 2
-        # -------------------------
-
+        # USUARIO 2 FALTANTE
         cursor.execute(
             """
             DELETE FROM inventario
 
             WHERE
-                usuario = ?
-                AND figurita = ?
+                usuario = %s
+                AND figurita = %s
                 AND tipo = 'faltante'
             """,
             (
@@ -596,26 +571,24 @@ def aceptar(id_intercambio):
                 da1
             )
         )
-
-        # -------------------------
-        # MARCAR REALIZADO
-        # -------------------------
 
         cursor.execute(
             """
             UPDATE intercambios
             SET realizado = 1
-            WHERE id = ?
+            WHERE id = %s
             """,
             (id_intercambio,)
         )
 
         conexion.commit()
 
+        limpiar_intercambios()
+
     return redirect("/")
 
 # -------------------------
-# PAGINA PRINCIPAL
+# HOME
 # -------------------------
 
 @app.route("/")
@@ -628,12 +601,10 @@ def inicio():
 
     usuarios = {}
 
-    cursor.execute(
-        """
-        SELECT nombre
-        FROM usuarios
-        """
-    )
+    cursor.execute("""
+    SELECT nombre
+    FROM usuarios
+    """)
 
     lista_usuarios = cursor.fetchall()
 
@@ -643,12 +614,13 @@ def inicio():
 
         usuarios[nombre] = obtener_inventario(nombre)
 
-    # CREAR INTERCAMBIOS
     crear_intercambios(usuarios)
 
-    # LEER INTERCAMBIOS
+    limpiar_intercambios()
+
     cursor.execute("""
-    SELECT * FROM intercambios
+    SELECT *
+    FROM intercambios
     WHERE realizado = 0
     """)
 
@@ -668,12 +640,11 @@ def inicio():
             "acepto2": inter[6]
         })
 
-    # INVENTARIO ACTUAL
     cursor.execute(
         """
         SELECT *
         FROM inventario
-        WHERE usuario = ?
+        WHERE usuario = %s
         """,
         (usuario_actual,)
     )
