@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Sistema de Figuritas</title>
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <style>
+
+        body {
+
+            font-family: Arial;
+            margin: 10px;
+            background-color: #f2f2f2;
+
+        }
+
+        .caja {
+
+            background: white;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+
+        }
+
+        input,
+        select,
+        button {
+
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+
+        }
+
+        button {
+
+            cursor: pointer;
+
+        }
+
+        a {
+
+            text-decoration: none;
+
+        }
+
+        .inventario {
+
+            display: flex;
+            gap: 20px;
+
+        }
+
+        .columna {
+
+            flex: 1;
+
+        }
+
+        .item {
+
+            background: #f7f7f7;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+
+        }
+
+        .trade {
+
+            background: #f7f7f7;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+
+        }
+
+        /* MOBILE */
+
+        @media (max-width: 700px) {
+
+            .inventario {
+
+                flex-direction: column;
+
+            }
+
+            body {
+
+                margin: 5px;
+
+            }
+
+            h1 {
+
+                font-size: 24px;
+
+            }
+
+            h2 {
+
+                font-size: 20px;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <!-- HEADER -->
+
+    <div class="caja">
+
+        <h1>Sistema de Figuritas</h1>
+
+        <p>
+            Usuario conectado:
+            <b>{{ usuario_actual.title() }}</b>
+        </p>
+
+        <a href="/logout">
+            Cerrar sesión
+        </a>
+
+    </div>
+
+    <!-- AGREGAR -->
+
+    <div class="caja">
+
+        <h2>Agregar figurita</h2>
+
+        <form method="POST" action="/agregar">
+
+            <input
+                type="text"
+                name="figurita"
+                placeholder="Nombre de figurita"
+            >
+
+            <select name="tipo">
+
+                <option value="faltante">
+                    Faltante
+                </option>
+
+                <option value="repetida">
+                    Repetida
+                </option>
+
+            </select>
+
+            <button type="submit">
+                Agregar
+            </button>
+
+        </form>
+
+    </div>
+
+    <!-- INVENTARIO -->
+
+    <div class="caja">
+
+        <h2>Mi inventario</h2>
+
+        <div class="inventario">
+
+            <!-- FALTANTES -->
+
+            <div class="columna">
+
+                <h3>Faltantes</h3>
+
+                {% for item in inventario %}
+
+                    {% if item[3] == "faltante" %}
+
+                        <div class="item">
+
+                            <b>
+                                {{ item[2].title() }}
+                            </b>
+
+                            <br><br>
+
+                            Cantidad:
+                            {{ item[4] }}
+
+                            <br><br>
+
+                            <a href="/sumar/{{ item[0] }}">
+                                ➕
+                            </a>
+
+                            <a href="/restar/{{ item[0] }}">
+                                ➖
+                            </a>
+
+                        </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+            <!-- REPETIDAS -->
+
+            <div class="columna">
+
+                <h3>Repetidas</h3>
+
+                {% for item in inventario %}
+
+                    {% if item[3] == "repetida" %}
+
+                        <div class="item">
+
+                            <b>
+                                {{ item[2].title() }}
+                            </b>
+
+                            <br><br>
+
+                            Cantidad:
+                            {{ item[4] }}
+
+                            <br><br>
+
+                            <a href="/sumar/{{ item[0] }}">
+                                ➕
+                            </a>
+
+                            <a href="/restar/{{ item[0] }}">
+                                ➖
+                            </a>
+
+                        </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- INTERCAMBIOS -->
+
+    <div class="caja">
+
+        <h2>Intercambios pendientes</h2>
+
+        {% if intercambios %}
+
+            {% for intercambio in intercambios %}
+
+                <div class="trade">
+
+                    <p>
+
+                        <b>
+                            {{ intercambio.usuario1.title() }}
+                        </b>
+
+                        entrega
+
+                        <b>
+                            {{ intercambio.da1.title() }}
+                        </b>
+
+                        ↔
+
+                        <b>
+                            {{ intercambio.usuario2.title() }}
+                        </b>
+
+                        entrega
+
+                        <b>
+                            {{ intercambio.da2.title() }}
+                        </b>
+
+                    </p>
+
+                    <p>
+
+                        {{ intercambio.usuario1.title() }}:
+
+                        {% if intercambio.acepto1 == 1 %}
+                            ✅
+                        {% else %}
+                            ❌
+                        {% endif %}
+
+                        <br><br>
+
+                        {{ intercambio.usuario2.title() }}:
+
+                        {% if intercambio.acepto2 == 1 %}
+                            ✅
+                        {% else %}
+                            ❌
+                        {% endif %}
+
+                    </p>
+
+                    <a href="/aceptar/{{ intercambio.id }}">
+
+                        <button>
+                            Aceptar intercambio
+                        </button>
+
+                    </a>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p>
+                No hay intercambios.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+</body>
+
+</html>
