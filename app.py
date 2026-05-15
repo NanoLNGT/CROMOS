@@ -23,7 +23,10 @@ conexion = sqlite3.connect(
 
 cursor = conexion.cursor()
 
+# -------------------------
 # TABLA USUARIOS
+# -------------------------
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS usuarios (
 
@@ -34,7 +37,10 @@ CREATE TABLE IF NOT EXISTS usuarios (
 )
 """)
 
+# -------------------------
 # TABLA INVENTARIO
+# -------------------------
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS inventario (
 
@@ -49,7 +55,10 @@ CREATE TABLE IF NOT EXISTS inventario (
 )
 """)
 
+# -------------------------
 # TABLA INTERCAMBIOS
+# -------------------------
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS intercambios (
 
@@ -84,12 +93,16 @@ def login():
         password = request.form["password"]
 
         cursor.execute(
-            "SELECT * FROM usuarios WHERE nombre = ?",
+            """
+            SELECT * FROM usuarios
+            WHERE nombre = ?
+            """,
             (nombre,)
         )
 
         usuario = cursor.fetchone()
 
+        # CREAR USUARIO
         if usuario is None:
 
             cursor.execute(
@@ -106,6 +119,7 @@ def login():
 
         else:
 
+            # PASSWORD INCORRECTA
             if usuario[2] != password:
 
                 return """
@@ -197,6 +211,7 @@ def agregar():
 
     existe = cursor.fetchone()
 
+    # YA EXISTE
     if existe:
 
         id_item = existe[0]
@@ -214,6 +229,7 @@ def agregar():
             )
         )
 
+    # NUEVA FIGURITA
     else:
 
         cursor.execute(
@@ -276,6 +292,7 @@ def restar(id_item):
 
         cantidad = item[0]
 
+        # BAJAR CANTIDAD
         if cantidad > 1:
 
             cursor.execute(
@@ -287,6 +304,7 @@ def restar(id_item):
                 (id_item,)
             )
 
+        # ELIMINAR
         else:
 
             cursor.execute(
@@ -407,6 +425,7 @@ def aceptar(id_intercambio):
     da1 = intercambio[3]
     da2 = intercambio[4]
 
+    # ACEPTAR
     if usuario_actual == usuario1:
 
         cursor.execute(
@@ -431,6 +450,7 @@ def aceptar(id_intercambio):
 
     conexion.commit()
 
+    # RECARGAR
     cursor.execute(
         """
         SELECT * FROM intercambios
@@ -441,12 +461,17 @@ def aceptar(id_intercambio):
 
     intercambio = cursor.fetchone()
 
+    # SI AMBOS ACEPTARON
     if intercambio[5] == 1 and intercambio[6] == 1:
 
-        # REMOVER FIGURITAS
+        # -------------------------
+        # REPETIDA USUARIO 1
+        # -------------------------
+
         cursor.execute(
             """
-            DELETE FROM inventario
+            SELECT id, cantidad
+            FROM inventario
 
             WHERE
                 usuario = ?
@@ -458,6 +483,38 @@ def aceptar(id_intercambio):
                 da1
             )
         )
+
+        item = cursor.fetchone()
+
+        if item:
+
+            id_item = item[0]
+            cantidad = item[1]
+
+            if cantidad > 1:
+
+                cursor.execute(
+                    """
+                    UPDATE inventario
+                    SET cantidad = cantidad - 1
+                    WHERE id = ?
+                    """,
+                    (id_item,)
+                )
+
+            else:
+
+                cursor.execute(
+                    """
+                    DELETE FROM inventario
+                    WHERE id = ?
+                    """,
+                    (id_item,)
+                )
+
+        # -------------------------
+        # FALTANTE USUARIO 1
+        # -------------------------
 
         cursor.execute(
             """
@@ -474,9 +531,14 @@ def aceptar(id_intercambio):
             )
         )
 
+        # -------------------------
+        # REPETIDA USUARIO 2
+        # -------------------------
+
         cursor.execute(
             """
-            DELETE FROM inventario
+            SELECT id, cantidad
+            FROM inventario
 
             WHERE
                 usuario = ?
@@ -488,6 +550,38 @@ def aceptar(id_intercambio):
                 da2
             )
         )
+
+        item = cursor.fetchone()
+
+        if item:
+
+            id_item = item[0]
+            cantidad = item[1]
+
+            if cantidad > 1:
+
+                cursor.execute(
+                    """
+                    UPDATE inventario
+                    SET cantidad = cantidad - 1
+                    WHERE id = ?
+                    """,
+                    (id_item,)
+                )
+
+            else:
+
+                cursor.execute(
+                    """
+                    DELETE FROM inventario
+                    WHERE id = ?
+                    """,
+                    (id_item,)
+                )
+
+        # -------------------------
+        # FALTANTE USUARIO 2
+        # -------------------------
 
         cursor.execute(
             """
@@ -503,6 +597,10 @@ def aceptar(id_intercambio):
                 da1
             )
         )
+
+        # -------------------------
+        # MARCAR REALIZADO
+        # -------------------------
 
         cursor.execute(
             """
@@ -531,7 +629,12 @@ def inicio():
 
     usuarios = {}
 
-    cursor.execute("SELECT nombre FROM usuarios")
+    cursor.execute(
+        """
+        SELECT nombre
+        FROM usuarios
+        """
+    )
 
     lista_usuarios = cursor.fetchall()
 
@@ -541,8 +644,10 @@ def inicio():
 
         usuarios[nombre] = obtener_inventario(nombre)
 
+    # CREAR INTERCAMBIOS
     crear_intercambios(usuarios)
 
+    # LEER INTERCAMBIOS
     cursor.execute("""
     SELECT * FROM intercambios
     WHERE realizado = 0
@@ -564,10 +669,7 @@ def inicio():
             "acepto2": inter[6]
         })
 
-    faltantes_actuales, repetidas_actuales = obtener_inventario(
-        usuario_actual
-    )
-
+    # INVENTARIO ACTUAL
     cursor.execute(
         """
         SELECT *
@@ -591,4 +693,8 @@ def inicio():
 # -------------------------
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+
+    app.run(
+        host="0.0.0.0",
+        port=5000
+    )
