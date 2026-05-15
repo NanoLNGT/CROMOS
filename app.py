@@ -6,7 +6,7 @@ from flask import (
     session
 )
 
-import sqlite3
+import psycopg2
 
 app = Flask(__name__)
 
@@ -16,9 +16,8 @@ app.secret_key = "super_secret_key"
 # SQLITE
 # -------------------------
 
-conexion = sqlite3.connect(
-    "figuritas.db",
-    check_same_thread=False
+conexion = psycopg2.connect(
+    "postgresql://postgres:Thiago20020403_@db.cedwdsoaiuzgrwmvdsus.supabase.co:5432/postgres"
 )
 
 cursor = conexion.cursor()
