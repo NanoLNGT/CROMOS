@@ -609,6 +609,29 @@ def aceptar(id_propuesta):
     conexion.commit()
 
     return redirect("/")
+
+# -------------------------
+# RECHAZAR PROPUESTA
+# -------------------------
+
+@app.route("/rechazar/<int:id_propuesta>")
+def rechazar(id_propuesta):
+
+    if "usuario" not in session:
+        return redirect("/login")
+
+    cursor.execute(
+        """
+        DELETE FROM propuestas
+        WHERE id = %s
+        """,
+        (id_propuesta,)
+    )
+
+    conexion.commit()
+
+    return redirect("/")
+
 # -------------------------
 # HOME
 # -------------------------
