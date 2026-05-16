@@ -311,7 +311,15 @@
 
                     </p>
 
+                {% if usuario_actual.lower() == intercambio.usuario1.lower() %}
+                
                 <a href="/proponer?u1={{ usuario_actual }}&u2={{ intercambio.usuario2 }}&d1={{ intercambio.da1 }}&d2={{ intercambio.da2 }}">
+                    
+                    {% else %}
+                    
+                    <a href="/proponer?u1={{ usuario_actual }}&u2={{ intercambio.usuario1 }}&d1={{ intercambio.da2 }}&d2={{ intercambio.da1 }}">
+                        
+                        {% endif %}
                     
                     <button>
                         Proponer intercambio
