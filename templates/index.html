@@ -338,12 +338,16 @@
 
     {% for propuesta in propuestas %}
 
+    {% if usuario_actual == propuesta[1] or usuario_actual == propuesta[2] %}
+
         <div class="trade">
 
             <p>
 
                 <b>
                     {{ propuesta[1].title() }}
+                    ↔
+                    {{ propuesta[2].title() }}
                 </b>
 
                 propone intercambiar:
@@ -374,7 +378,9 @@
 
         </div>
 
-    {% endfor %}
+    {% endif %}
+
+{% endfor %}
 
 </div>
 
