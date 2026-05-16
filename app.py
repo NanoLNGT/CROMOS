@@ -677,6 +677,39 @@ def rechazar(id_propuesta):
     return redirect("/")
 
 # -------------------------
+# EDITAR FIGURITA
+# -------------------------
+
+@app.route("/editar/<int:id_item>", methods=["POST"])
+def editar(id_item):
+
+    if "usuario" not in session:
+        return redirect("/login")
+
+    nuevo_nombre = request.form["nuevo_nombre"].strip().lower()
+
+    if nuevo_nombre == "":
+        return redirect("/")
+
+    cursor.execute(
+        """
+        UPDATE inventario
+
+        SET figurita = %s
+
+        WHERE id = %s
+        """,
+        (
+            nuevo_nombre,
+            id_item
+        )
+    )
+
+    conexion.commit()
+
+    return redirect("/")
+
+# -------------------------
 # HOME
 # -------------------------
 

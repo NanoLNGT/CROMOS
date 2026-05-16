@@ -218,6 +218,22 @@
                                 ➖
                             </a>
 
+                            <form
+                            method="POST"
+                            action="/editar/{{ item[0] }}"
+                            >
+                            
+                            <input
+                            type="text"
+                            name="nuevo_nombre"
+                            placeholder="Nuevo nombre"
+                            >
+                            <button type="submit">
+                                ✏️ Editar
+                            </button>
+                        
+                        </form>
+
                         </div>
 
                     {% endif %}
@@ -256,6 +272,22 @@
                             <a href="/restar/{{ item[0] }}">
                                 ➖
                             </a>
+                            <form
+                            method="POST"
+                            action="/editar/{{ item[0] }}"
+                            >
+
+                            <input
+                            type="text"
+                            name="nuevo_nombre"
+                            placeholder="Nuevo nombre"
+                            >
+                            
+                            <button type="submit">
+                                ✏️ Editar
+                            </button>
+                        
+                        </form>
 
                         </div>
 
