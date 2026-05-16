@@ -412,6 +412,50 @@
 
 </div>
 
+<div class="caja">
+
+    <h2>Historial de intercambios</h2>
+
+    {% for item in historial %}
+
+        <div class="trade">
+
+            <p>
+
+                <b>
+                    {{ item[1].title() }}
+                </b>
+
+                intercambió
+
+                <b>
+                    {{ item[3].title() }}
+                </b>
+
+                con
+
+                <b>
+                    {{ item[2].title() }}
+                </b>
+
+                por
+
+                <b>
+                    {{ item[4].title() }}
+                </b>
+
+            </p>
+
+            <small>
+                {{ item[5] }}
+            </small>
+
+        </div>
+
+    {% endfor %}
+
+</div>
+
 </body>
 
 </html>

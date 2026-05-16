@@ -79,6 +79,28 @@ CREATE TABLE IF NOT EXISTS propuestas (
 conexion.commit()
 
 # -------------------------
+# TABLA HISTORIAL
+# -------------------------
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS historial (
+
+    id SERIAL PRIMARY KEY,
+
+    usuario1 TEXT,
+    usuario2 TEXT,
+
+    da1 TEXT,
+    da2 TEXT,
+
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+)
+""")
+
+conexion.commit()
+
+# -------------------------
 # LOGIN
 # -------------------------
 
@@ -596,6 +618,28 @@ def aceptar(id_propuesta):
         """,
         (usuario2, da1)
     )
+    
+    # GUARDAR EN HISTORIAL
+
+    cursor.execute(
+        """
+        INSERT INTO historial
+        (
+            usuario1,
+            usuario2,
+            da1,
+            da2
+        )
+
+        VALUES (%s, %s, %s, %s)
+        """,
+        (
+            usuario1,
+            usuario2,
+            da1,
+            da2
+        )
+    )
 
     # BORRAR PROPUESTA
     cursor.execute(
@@ -724,11 +768,20 @@ def inicio():
     
     propuestas = cursor.fetchall()
     
+    cursor.execute("""
+    SELECT *
+    FROM historial
+    ORDER BY fecha DESC
+    """)
+
+    historial = cursor.fetchall()
+    
     return render_template(
         "index.html",
         usuario_actual=usuario_actual,
         inventario=inventario,
         propuestas=propuestas,
+        historial=historial,
         intercambios=intercambios
     )
 
