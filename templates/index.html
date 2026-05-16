@@ -338,17 +338,29 @@
 
     {% for propuesta in propuestas %}
 
-    {% if usuario_actual == propuesta[1] or usuario_actual == propuesta[2] %}
+    {% if usuario_actual.lower() == propuesta[1].lower() or usuario_actual.lower() == propuesta[2].lower() %}
 
         <div class="trade">
 
             <p>
 
                 <b>
-                    {{ propuesta[1].title() }}
-                    ↔
-                    {{ propuesta[2].title() }}
-                </b>
+
+    {% if usuario_actual.lower() == propuesta[1].lower() %}
+
+        {{ propuesta[1].title() }}
+        ↔
+        {{ propuesta[2].title() }}
+
+    {% else %}
+
+        {{ propuesta[2].title() }}
+        ↔
+        {{ propuesta[1].title() }}
+
+    {% endif %}
+
+</b>
 
                 propone intercambiar:
 
@@ -364,7 +376,7 @@
 
             </p>
 
-            {% if usuario_actual == propuesta[2] %}
+            {% if usuario_actual.lower() == propuesta[2].lower() %}
 
                 <a href="/aceptar/{{ propuesta[0] }}">
 
